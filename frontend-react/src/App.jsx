@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   SandpackCodeEditor,
   SandpackConsole,
@@ -28,125 +28,153 @@ const starterMessages = [
 ];
 
 const sandpackFiles = {
-  "/App.jsx": `export default function App() {
+  "/App.jsx": `const actions = [
+  { label: "Launch Demo", kind: "primary" },
+  { label: "View Prompt", kind: "secondary" }
+];
+
+export default function App() {
   return (
-    <main style={styles.page}>
-      <div style={styles.glowA} />
-      <div style={styles.glowB} />
-      <section style={styles.card}>
-        <p style={styles.kicker}>Agent Generated Landing Page</p>
-        <h1 style={styles.title}>Build bold ideas while chatting with your agent.</h1>
-        <p style={styles.body}>
+    <main className="page-shell">
+      <div className="glow glow-a" />
+      <div className="glow glow-b" />
+      <section className="card">
+        <p className="kicker">Agent Generated Vue Page</p>
+        <h1>Build bold ideas while chatting with your agent.</h1>
+        <p className="body">
           Ask for layouts, components, or full-page redesigns and iterate live in the preview.
         </p>
-        <div style={styles.actions}>
-          <button style={styles.primary}>Launch Demo</button>
-          <button style={styles.secondary}>View Prompt</button>
+        <div className="actions">
+          {actions.map((action) => (
+            <button key={action.label} className={action.kind}>
+              {action.label}
+            </button>
+          ))}
         </div>
       </section>
     </main>
   );
 }
-
-const styles = {
-  page: {
-    minHeight: "100vh",
-    position: "relative",
-    overflow: "hidden",
-    display: "grid",
-    placeItems: "center",
-    background:
-      "radial-gradient(circle at top, #ffd58a 0%, #f29559 28%, #8a2a20 62%, #19090b 100%)",
-    color: "#fff7ed",
-    fontFamily: "Arial, sans-serif",
-    padding: 24
-  },
-  glowA: {
-    position: "absolute",
-    width: 280,
-    height: 280,
-    borderRadius: "50%",
-    background: "rgba(255, 244, 185, 0.26)",
-    filter: "blur(24px)",
-    top: 40,
-    left: 20
-  },
-  glowB: {
-    position: "absolute",
-    width: 220,
-    height: 220,
-    borderRadius: "50%",
-    background: "rgba(255, 144, 88, 0.24)",
-    filter: "blur(30px)",
-    bottom: 48,
-    right: 30
-  },
-  card: {
-    position: "relative",
-    zIndex: 1,
-    width: "min(720px, 100%)",
-    borderRadius: 32,
-    padding: 36,
-    background: "rgba(33, 10, 9, 0.72)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    backdropFilter: "blur(18px)",
-    boxShadow: "0 30px 90px rgba(0,0,0,0.28)"
-  },
-  kicker: {
-    margin: 0,
-    textTransform: "uppercase",
-    letterSpacing: "0.18em",
-    fontSize: 12,
-    color: "#ffd7b0"
-  },
-  title: {
-    marginTop: 16,
-    marginBottom: 16,
-    fontSize: "clamp(2.6rem, 7vw, 4.6rem)",
-    lineHeight: 0.95
-  },
-  body: {
-    margin: 0,
-    maxWidth: 520,
-    fontSize: 18,
-    lineHeight: 1.6,
-    color: "rgba(255,247,237,0.78)"
-  },
-  actions: {
-    display: "flex",
-    gap: 14,
-    flexWrap: "wrap",
-    marginTop: 28
-  },
-  primary: {
-    border: 0,
-    borderRadius: 999,
-    padding: "14px 22px",
-    fontWeight: 700,
-    background: "#fff2bd",
-    color: "#4d1507",
-    cursor: "pointer"
-  },
-  secondary: {
-    borderRadius: 999,
-    padding: "14px 22px",
-    fontWeight: 700,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "transparent",
-    color: "#fff7ed",
-    cursor: "pointer"
-  }
-};`
+`
   ,
   "/index.jsx": `import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
+import "./styles.css";
 
 createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
+`,
+  "/styles.css": `:root {
+  color: #fff7ed;
+  font-family: "Space Grotesk", "Noto Sans SC", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page-shell {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top, #ffd58a 0%, #f29559 28%, #8a2a20 62%, #19090b 100%);
+}
+
+.glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(24px);
+}
+
+.glow-a {
+  width: 280px;
+  height: 280px;
+  top: 40px;
+  left: 20px;
+  background: rgba(255, 244, 185, 0.26);
+}
+
+.glow-b {
+  width: 220px;
+  height: 220px;
+  right: 30px;
+  bottom: 48px;
+  background: rgba(255, 144, 88, 0.24);
+  filter: blur(30px);
+}
+
+.card {
+  position: relative;
+  zIndex: 1;
+  width: min(720px, 100%);
+  padding: 36px;
+  border-radius: 32px;
+  background: rgba(33, 10, 9, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.28);
+}
+
+.kicker {
+  margin: 0;
+  color: #ffd7b0;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+}
+
+h1 {
+  margin: 16px 0;
+  font-size: clamp(2.6rem, 7vw, 4.6rem);
+  line-height: 0.95;
+}
+
+.body {
+  margin: 0;
+  max-width: 520px;
+  color: rgba(255, 247, 237, 0.78);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 22px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary {
+  background: #fff2bd;
+  color: #4d1507;
+}
+
+.secondary {
+  color: #fff7ed;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
 `
 };
 
@@ -157,31 +185,6 @@ function App() {
   const [activeTab, setActiveTab] = useState("code");
   const [isFileTreeOpen, setIsFileTreeOpen] = useState(true);
   const [isTerminalOpen, setIsTerminalOpen] = useState(true);
-  const previewRef = useRef(null);
-
-  useEffect(() => {
-    if (activeTab !== "preview") {
-      return;
-    }
-
-    const refreshPreview = () => {
-      const client = previewRef.current?.getClient?.();
-      if (client?.dispatch) {
-        client.dispatch({ type: "refresh" });
-      }
-
-      window.dispatchEvent(new Event("resize"));
-    };
-
-    const firstFrame = window.requestAnimationFrame(refreshPreview);
-    const timer = window.setTimeout(refreshPreview, 250);
-
-    return () => {
-      window.cancelAnimationFrame(firstFrame);
-      window.clearTimeout(timer);
-    };
-  }, [activeTab]);
-
   const handleTabChange = (nextTab) => {
     setActiveTab(nextTab);
   };
@@ -322,7 +325,7 @@ function App() {
               theme="dark"
               options={{
                 activeFile: "/App.jsx",
-                visibleFiles: ["/App.jsx", "/index.jsx"],
+                visibleFiles: ["/App.jsx", "/index.jsx", "/styles.css"],
                 autorun: true,
                 initMode: "immediate",
                 recompileMode: "immediate",
@@ -393,7 +396,6 @@ function App() {
                 >
                   <div className="preview-panel">
                     <SandpackPreview
-                      ref={previewRef}
                       showNavigator={false}
                       showRefreshButton
                       showRestartButton={false}
