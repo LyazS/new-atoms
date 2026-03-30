@@ -72,10 +72,32 @@ class PublishStatus(StrEnum):
     FAILED = "failed"
 
 
+class SelectedNodeRect(BaseModel):
+    top: float
+    left: float
+    width: float
+    height: float
+
+
+class SelectedNodeContext(BaseModel):
+    tagName: str
+    textPreview: str
+    role: str | None = None
+    ariaLabel: str | None = None
+    id: str | None = None
+    classList: list[str] = Field(default_factory=list)
+    dataBtomsId: str | None = None
+    boundingRect: SelectedNodeRect
+    parentSummary: str | None = None
+    sectionSummary: str | None = None
+    suggestedSelector: str | None = None
+
+
 class ChatMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     role: MessageRole
     content: str
+    selection_context: SelectedNodeContext | None = None
     reasoning_content: str | None = None
     tool_call_id: str | None = None
     name: str | None = None
@@ -219,6 +241,7 @@ class FrontendToolResultResponse(BaseModel):
 class UserMessageInputRequest(BaseModel):
     type: Literal["user_message"]
     content: str
+    selection_context: SelectedNodeContext | None = None
 
 
 class FrontendToolResultInputRequest(FrontendToolResultRequest):

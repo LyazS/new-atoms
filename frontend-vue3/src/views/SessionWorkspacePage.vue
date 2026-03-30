@@ -11,10 +11,12 @@ const route = useRoute()
 const router = useRouter()
 const { isAuthenticated } = useAuthState()
 const {
+  clearSelectedNode,
   compileStatusLabel,
   disconnectEventStream,
   draft,
   handleManualRunResult,
+  handlePreviewSelection,
   handleRunnerStateChange,
   handleSubmit,
   isHydrating,
@@ -27,7 +29,10 @@ const {
   publishStatus,
   publishUrl,
   runRequestKey,
+  selectedNodeContext,
+  selectionModeEnabled,
   sessionTitle,
+  setSelectionModeEnabled,
   triggerPublish,
   workspaceFiles,
 } = useSessionConversationState()
@@ -88,6 +93,9 @@ watch(isAuthenticated, (value) => {
         :is-hydrating="isHydrating"
         :is-thinking="isThinking"
         :messages="messages"
+        :selected-node-context="selectedNodeContext"
+        :selection-mode-enabled="selectionModeEnabled"
+        @clear-selection="clearSelectedNode"
         @submit="handleSubmit"
       />
 
@@ -95,9 +103,13 @@ watch(isAuthenticated, (value) => {
         :compile-status-label="compileStatusLabel"
         :last-compile-feedback="lastCompileFeedback"
         :run-request-key="runRequestKey"
+        :selected-node-context="selectedNodeContext"
+        :selection-mode-enabled="selectionModeEnabled"
         :workspace-files="workspaceFiles"
         @manual-run-result="handleManualRunResult"
+        @node-selected="handlePreviewSelection"
         @runner-state-change="handleRunnerStateChange"
+        @selection-mode-change="setSelectionModeEnabled"
       />
     </main>
     <p v-if="publishError" class="panel-error publish-inline-error">{{ publishError }}</p>

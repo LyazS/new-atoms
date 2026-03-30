@@ -478,6 +478,50 @@ a {
   padding: 0 24px 24px;
 }
 
+.selection-hint {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.selection-hint.is-active {
+  border-color: rgba(255, 194, 123, 0.35);
+  background: linear-gradient(180deg, rgba(255, 186, 108, 0.13), rgba(255, 255, 255, 0.04));
+}
+
+.selection-hint-copy {
+  min-width: 0;
+}
+
+.selection-hint-kicker,
+.selection-hint-text {
+  margin: 0;
+}
+
+.selection-hint-kicker {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: rgba(255, 214, 171, 0.66);
+}
+
+.selection-hint-text {
+  margin-top: 4px;
+  color: rgba(255, 248, 239, 0.88);
+  font-size: 0.92rem;
+}
+
+.selection-clear-button {
+  margin-left: auto;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+}
+
 .composer textarea {
   width: 100%;
   resize: none;
@@ -588,9 +632,21 @@ a {
 }
 
 .preview-panel {
+  position: relative;
   width: 100%;
   height: 100%;
   min-height: 0;
+}
+
+.selection-mode-button {
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.selection-mode-button.is-active {
+  border-color: rgba(255, 204, 141, 0.28);
+  background: linear-gradient(135deg, rgba(255, 204, 141, 0.18), rgba(255, 135, 84, 0.16));
 }
 
 .preview-panel > * {

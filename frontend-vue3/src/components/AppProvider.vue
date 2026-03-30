@@ -30,6 +30,8 @@ const {
         :is-hydrating="isHydrating"
         :is-thinking="isThinking"
         :messages="messages"
+        :selected-node-context="null"
+        :selection-mode-enabled="false"
         @submit="handleSubmit"
       />
 
@@ -37,9 +39,13 @@ const {
         :compile-status-label="compileStatusLabel"
         :last-compile-feedback="lastCompileFeedback"
         :run-request-key="runRequestKey"
+        :selected-node-context="null"
+        :selection-mode-enabled="false"
         :workspace-files="workspaceFiles"
         @manual-run-result="handleManualRunResult"
+        @node-selected="() => undefined"
         @runner-state-change="handleRunnerStateChange"
+        @selection-mode-change="() => undefined"
       />
     </main>
   </div>

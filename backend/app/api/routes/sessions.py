@@ -101,7 +101,14 @@ async def _handle_user_message_input(session_id: str, request: UserMessageInputR
         if session.active_turn:
             raise HTTPException(status_code=409, detail="active turn already running")
 
-        session_store.append_message(session, ChatMessage(role=MessageRole.USER, content=request.content))
+        session_store.append_message(
+            session,
+            ChatMessage(
+                role=MessageRole.USER,
+                content=request.content,
+                selection_context=request.selection_context,
+            ),
+        )
         turn = Turn(user_message=request.content)
         session_store.set_active_turn(session, turn)
 
@@ -271,7 +278,7 @@ async def create_message(
     session_store.get_user_session(session_id=session_id, user_id=current_user.id)
     response = await _handle_user_message_input(
         session_id,
-        UserMessageInputRequest(type="user_message", content=request.content),
+        UserMessageInputRequest(type="user_message", content=request.content, selection_context=None),
     )
     return CreateMessageResponse(turn_id=response.turn_id or "", state=response.state or TurnState.FAILED)
 

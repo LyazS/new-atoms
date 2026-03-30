@@ -3,6 +3,8 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 
 import type { CompileFeedback } from './useSandpackManualRun'
 import { ApiError, apiJson, getApiBaseUrl } from '../lib/api'
+import type { SelectedNodeContext } from '../lib/selection'
+import { describeSelectedNode } from '../lib/selection'
 import { cloneDefaultWorkspace } from '../lib/sandpackWorkspace'
 import { useAuthState } from './useAuthState'
 import { useSessionListState } from './useSessionListState'
@@ -90,6 +92,9 @@ export function useSessionConversationState() {
   const isHydrating = ref(false)
   const runRequestKey = ref(0)
   const lastCompileFeedback = ref<CompileFeedback | null>(null)
+  const selectedNodeContext = ref<SelectedNodeContext | null>(null)
+  const selectionModeEnabled = ref(true)
+  const lastSelectionAt = ref<number | null>(null)
   const eventConnectionState = ref<'connecting' | 'open' | 'closed'>('closed')
   const currentTurnId = ref<string | null>(null)
   const pendingFrontendTurnId = ref<string | null>(null)
@@ -151,6 +156,8 @@ export function useSessionConversationState() {
     }
     return '发布失败'
   })
+
+  const selectedNodeLabel = computed(() => describeSelectedNode(selectedNodeContext.value))
 
   function hydrateMessages(nextMessages: ServerDisplayMessage[]) {
     messages.value = nextMessages.map((message) => ({
@@ -265,6 +272,22 @@ export function useSessionConversationState() {
       }
     }
     workspaceFiles.value = nextFiles
+    selectedNodeContext.value = null
+    lastSelectionAt.value = null
+  }
+
+  function handlePreviewSelection(selection: SelectedNodeContext) {
+    selectedNodeContext.value = selection
+    lastSelectionAt.value = Date.now()
+  }
+
+  function clearSelectedNode() {
+    selectedNodeContext.value = null
+    lastSelectionAt.value = null
+  }
+
+  function setSelectionModeEnabled(nextValue: boolean) {
+    selectionModeEnabled.value = nextValue
   }
 
   function applyPublishState(payload: PublishStateResponse) {
@@ -522,6 +545,7 @@ export function useSessionConversationState() {
       workspaceFiles.value = payload.workspace
       hydrateMessages(payload.display_messages)
       lastCompileFeedback.value = payload.last_compile_feedback
+      clearSelectedNode()
       currentTurnId.value = payload.active_turn?.state === 'running' ? payload.active_turn.id : null
       pendingFrontendTurnId.value =
         payload.active_turn?.state === 'waiting_for_frontend' ? payload.active_turn.id : null
@@ -570,6 +594,7 @@ export function useSessionConversationState() {
           body: JSON.stringify({
             type: 'user_message',
             content,
+            selection_context: selectedNodeContext.value,
           }),
         },
         accessToken.value,
@@ -686,6 +711,7 @@ export function useSessionConversationState() {
     disconnectEventStream,
     draft,
     handleManualRunResult,
+    handlePreviewSelection,
     handleRunnerStateChange,
     handleSubmit,
     isHydrating,
@@ -705,8 +731,14 @@ export function useSessionConversationState() {
     publishUrl,
     publishVersion,
     runRequestKey,
+    selectedNodeContext,
+    selectedNodeLabel,
+    selectionModeEnabled,
     sessionTitle,
+    setSelectionModeEnabled,
+    clearSelectedNode,
     triggerPublish,
     workspaceFiles,
+    lastSelectionAt,
   }
 }

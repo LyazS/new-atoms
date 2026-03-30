@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from 'vue'
 import {
   SandpackCodeEditor,
   SandpackConsole,
@@ -9,23 +9,101 @@ import {
 } from 'sandpack-vue3'
 
 import type { CompileFeedback } from '../composables/useSandpackManualRun'
+import { buildPreviewWorkspaceFiles } from '../lib/selection'
+import type { SelectedNodeContext } from '../lib/selection'
 import SandpackCompileBridge from './SandpackCompileBridge.vue'
 
 const props = defineProps<{
   compileStatusLabel: string
   lastCompileFeedback: CompileFeedback | null
   runRequestKey: number
+  selectedNodeContext: SelectedNodeContext | null
+  selectionModeEnabled: boolean
   workspaceFiles: Record<string, string>
 }>()
 
 const emit = defineEmits<{
   manualRunResult: [feedback: CompileFeedback]
+  nodeSelected: [selection: SelectedNodeContext]
   runnerStateChange: [value: boolean]
+  selectionModeChange: [value: boolean]
 }>()
 
 const activeTab = ref<'code' | 'preview'>('preview')
 const isFileTreeOpen = ref(true)
 const isTerminalOpen = ref(false)
+const previewPanelRef = useTemplateRef<HTMLDivElement>('previewPanel')
+
+const PREVIEW_SELECTION_MESSAGE_SOURCE = 'btoms-preview-selection'
+
+let previewIframe: HTMLIFrameElement | null = null
+let previewMutationObserver: MutationObserver | null = null
+let previewLoadCleanup: (() => void) | null = null
+
+const previewWorkspaceFiles = computed(() =>
+  buildPreviewWorkspaceFiles(props.workspaceFiles, props.selectionModeEnabled),
+)
+
+function postSelectionModeToPreview() {
+  if (!previewIframe?.contentWindow) {
+    return
+  }
+
+  previewIframe.contentWindow.postMessage(
+    {
+      source: PREVIEW_SELECTION_MESSAGE_SOURCE,
+      type: 'selection-mode',
+      enabled: props.selectionModeEnabled,
+    },
+    '*',
+  )
+}
+
+function cleanupPreviewIframe() {
+  previewLoadCleanup?.()
+  previewLoadCleanup = null
+  previewIframe = null
+}
+
+function bindPreviewIframe(nextIframe: HTMLIFrameElement | null) {
+  if (previewIframe === nextIframe) {
+    return
+  }
+
+  cleanupPreviewIframe()
+  previewIframe = nextIframe
+
+  if (!previewIframe) {
+    return
+  }
+
+  const handleLoad = () => {
+    window.setTimeout(() => {
+      postSelectionModeToPreview()
+    }, 120)
+  }
+
+  previewIframe.addEventListener('load', handleLoad)
+  previewLoadCleanup = () => {
+    previewIframe?.removeEventListener('load', handleLoad)
+  }
+
+  handleLoad()
+}
+
+function scanPreviewIframe() {
+  const nextIframe = previewPanelRef.value?.querySelector('iframe') ?? null
+  bindPreviewIframe(nextIframe)
+}
+
+function handleWindowMessage(event: MessageEvent) {
+  const data = event.data
+  if (!data || data.source !== PREVIEW_SELECTION_MESSAGE_SOURCE || data.type !== 'node-selected') {
+    return
+  }
+
+  emit('nodeSelected', data.payload as SelectedNodeContext)
+}
 
 watch(activeTab, async (nextTab) => {
   if (nextTab !== 'preview') {
@@ -37,6 +115,42 @@ watch(activeTab, async (nextTab) => {
     window.dispatchEvent(new Event('resize'))
   })
 })
+
+watch(
+  () => props.selectionModeEnabled,
+  () => {
+    postSelectionModeToPreview()
+  },
+)
+
+watch(
+  previewWorkspaceFiles,
+  () => {
+    window.setTimeout(() => {
+      scanPreviewIframe()
+      postSelectionModeToPreview()
+    }, 120)
+  },
+  { deep: true },
+)
+
+onMounted(() => {
+  window.addEventListener('message', handleWindowMessage)
+  previewMutationObserver = new MutationObserver(() => {
+    scanPreviewIframe()
+  })
+  if (previewPanelRef.value) {
+    previewMutationObserver.observe(previewPanelRef.value, { childList: true, subtree: true })
+  }
+  scanPreviewIframe()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('message', handleWindowMessage)
+  previewMutationObserver?.disconnect()
+  previewMutationObserver = null
+  cleanupPreviewIframe()
+})
 </script>
 
 <template>
@@ -44,6 +158,13 @@ watch(activeTab, async (nextTab) => {
     <div class="panel-header sandbox-panel-header">
       <div class="sandbox-toolbar">
         <div class="status-pill sandbox-status-pill">{{ props.compileStatusLabel }}</div>
+        <button
+          type="button"
+          :class="['secondary-button', 'selection-mode-button', { 'is-active': props.selectionModeEnabled }]"
+          @click="emit('selectionModeChange', !props.selectionModeEnabled)"
+        >
+          {{ props.selectionModeEnabled ? '点选编辑已开启' : '点选编辑已关闭' }}
+        </button>
         <div class="tab-switcher" role="tablist" aria-label="Sandpack views">
           <button
             type="button"
@@ -81,7 +202,7 @@ watch(activeTab, async (nextTab) => {
             vite: '4.2.2',
           },
         }"
-        :files="workspaceFiles"
+        :files="previewWorkspaceFiles"
         theme="dark"
         :options="{
           activeFile: '/src/App.vue',
@@ -99,7 +220,7 @@ watch(activeTab, async (nextTab) => {
         }"
       >
         <SandpackCompileBridge
-          :workspace-files="workspaceFiles"
+          :workspace-files="previewWorkspaceFiles"
           :run-request-key="runRequestKey"
           @manual-run-result="emit('manualRunResult', $event)"
           @running-change="emit('runnerStateChange', $event)"
@@ -180,7 +301,7 @@ watch(activeTab, async (nextTab) => {
           </div>
 
           <div v-show="activeTab === 'preview'" class="sandpack-view is-active">
-            <div class="preview-panel">
+            <div ref="previewPanel" class="preview-panel">
               <SandpackPreview
                 :show-navigator="false"
                 :show-refresh-button="true"
