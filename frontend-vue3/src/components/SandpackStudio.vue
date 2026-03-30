@@ -12,6 +12,7 @@ import type { CompileFeedback } from '../composables/useSandpackManualRun'
 import SandpackCompileBridge from './SandpackCompileBridge.vue'
 
 const props = defineProps<{
+  compileStatusLabel: string
   lastCompileFeedback: CompileFeedback | null
   runRequestKey: number
   workspaceFiles: Record<string, string>
@@ -22,9 +23,9 @@ const emit = defineEmits<{
   runnerStateChange: [value: boolean]
 }>()
 
-const activeTab = ref<'code' | 'preview'>('code')
+const activeTab = ref<'code' | 'preview'>('preview')
 const isFileTreeOpen = ref(true)
-const isTerminalOpen = ref(true)
+const isTerminalOpen = ref(false)
 
 watch(activeTab, async (nextTab) => {
   if (nextTab !== 'preview') {
@@ -40,12 +41,9 @@ watch(activeTab, async (nextTab) => {
 
 <template>
   <section class="panel sandbox-panel">
-    <div class="panel-header">
-      <div>
-        <p class="panel-kicker">Interactive Preview</p>
-        <h2>Sandpack</h2>
-      </div>
+    <div class="panel-header sandbox-panel-header">
       <div class="sandbox-toolbar">
+        <div class="status-pill sandbox-status-pill">{{ props.compileStatusLabel }}</div>
         <div class="tab-switcher" role="tablist" aria-label="Sandpack views">
           <button
             type="button"
@@ -66,7 +64,6 @@ watch(activeTab, async (nextTab) => {
             预览
           </button>
         </div>
-        <div class="status-pill">{{ props.lastCompileFeedback?.status ?? 'blank' }}</div>
       </div>
     </div>
 
@@ -83,36 +80,43 @@ watch(activeTab, async (nextTab) => {
           initMode: 'immediate',
         }"
       >
+        <SandpackCompileBridge
+          :workspace-files="workspaceFiles"
+          :run-request-key="runRequestKey"
+          @manual-run-result="emit('manualRunResult', $event)"
+          @running-change="emit('runnerStateChange', $event)"
+        />
         <div class="sandpack-tab-panel">
           <div v-show="activeTab === 'code'" class="sandpack-view is-active">
             <div class="code-workbench">
-              <div class="workbench-toolbar">
-                <SandpackCompileBridge
-                  :workspace-files="workspaceFiles"
-                  :run-request-key="runRequestKey"
-                  @manual-run-result="emit('manualRunResult', $event)"
-                  @running-change="emit('runnerStateChange', $event)"
-                />
-                <button
-                  type="button"
-                  :class="['pane-toggle', { 'is-open': isFileTreeOpen }]"
-                  @click="isFileTreeOpen = !isFileTreeOpen"
-                >
-                  {{ isFileTreeOpen ? '隐藏目录树' : '显示目录树' }}
-                </button>
-                <button
-                  type="button"
-                  :class="['pane-toggle', { 'is-open': isTerminalOpen }]"
-                  @click="isTerminalOpen = !isTerminalOpen"
-                >
-                  {{ isTerminalOpen ? '隐藏终端' : '显示终端' }}
-                </button>
-              </div>
-
               <div :class="['workbench-body', { 'is-tree-collapsed': !isFileTreeOpen }]">
-                <aside v-show="isFileTreeOpen" class="file-tree-panel">
-                  <div class="file-tree-header">Files</div>
-                  <SandpackFileExplorer :auto-hidden-files="false" />
+                <aside :class="['file-tree-panel', { 'is-collapsed': !isFileTreeOpen }]">
+                  <div class="file-tree-header">
+                    <span v-show="isFileTreeOpen">Files</span>
+                    <button
+                      type="button"
+                      class="file-tree-icon-button"
+                      :aria-label="isFileTreeOpen ? '隐藏目录树' : '显示目录树'"
+                      :title="isFileTreeOpen ? '隐藏目录树' : '显示目录树'"
+                      @click="isFileTreeOpen = !isFileTreeOpen"
+                    >
+                      <svg
+                        viewBox="0 0 16 16"
+                        aria-hidden="true"
+                        :class="['file-tree-icon', { 'is-collapsed': !isFileTreeOpen }]"
+                      >
+                        <path
+                          d="M10.5 3.5 6 8l4.5 4.5"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="1.6"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                  <SandpackFileExplorer v-show="isFileTreeOpen" :auto-hidden-files="false" />
                 </aside>
 
                 <div :class="['editor-column', { 'is-terminal-collapsed': !isTerminalOpen }]">
@@ -120,9 +124,37 @@ watch(activeTab, async (nextTab) => {
                     <SandpackCodeEditor :show-line-numbers="true" />
                   </div>
 
-                  <section v-show="isTerminalOpen" class="terminal-panel">
-                    <div class="terminal-header">Terminal</div>
-                    <SandpackConsole :reset-on-preview-restart="true" :show-syntax-error="true" />
+                  <section :class="['terminal-panel', { 'is-collapsed': !isTerminalOpen }]">
+                    <div class="terminal-header">
+                      <span>Terminal</span>
+                      <button
+                        type="button"
+                        class="terminal-icon-button"
+                        :aria-label="isTerminalOpen ? '隐藏终端' : '显示终端'"
+                        :title="isTerminalOpen ? '隐藏终端' : '显示终端'"
+                        @click="isTerminalOpen = !isTerminalOpen"
+                      >
+                        <svg
+                          viewBox="0 0 16 16"
+                          aria-hidden="true"
+                          :class="['terminal-icon', { 'is-collapsed': !isTerminalOpen }]"
+                        >
+                          <path
+                            d="M3.5 5.5 8 10l4.5-4.5"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.6"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    <SandpackConsole
+                      v-show="isTerminalOpen"
+                      :reset-on-preview-restart="true"
+                      :show-syntax-error="true"
+                    />
                   </section>
                 </div>
               </div>

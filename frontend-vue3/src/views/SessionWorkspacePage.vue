@@ -12,7 +12,6 @@ const router = useRouter()
 const { logout, isAuthenticated } = useAuthState()
 const {
   compileStatusLabel,
-  currentSessionId,
   disconnectEventStream,
   draft,
   handleManualRunResult,
@@ -76,17 +75,14 @@ watch(isAuthenticated, (value) => {
     <main class="workspace">
       <ChatPanel
         v-model:draft="draft"
-        composer-label="继续描述这个项目接下来要完成的内容"
-        :compile-status-label="compileStatusLabel"
         :is-hydrating="isHydrating"
         :is-thinking="isThinking"
         :messages="messages"
-        :session-id="currentSessionId"
-        :show-create-button="false"
         @submit="handleSubmit"
       />
 
       <SandpackStudio
+        :compile-status-label="compileStatusLabel"
         :last-compile-feedback="lastCompileFeedback"
         :run-request-key="runRequestKey"
         :workspace-files="workspaceFiles"

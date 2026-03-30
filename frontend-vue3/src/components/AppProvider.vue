@@ -8,7 +8,6 @@ const {
   compileStatusLabel,
   connectionLabel,
   draft,
-  handleCreateSession,
   handleManualRunResult,
   handleRunnerStateChange,
   handleSubmit,
@@ -17,7 +16,6 @@ const {
   lastCompileFeedback,
   messages,
   runRequestKey,
-  sessionId,
   workspaceFiles,
 } = useAppProviderState()
 </script>
@@ -29,16 +27,14 @@ const {
     <main class="workspace">
       <ChatPanel
         v-model:draft="draft"
-        :compile-status-label="compileStatusLabel"
         :is-hydrating="isHydrating"
         :is-thinking="isThinking"
         :messages="messages"
-        :session-id="sessionId"
-        @create-session="handleCreateSession"
         @submit="handleSubmit"
       />
 
       <SandpackStudio
+        :compile-status-label="compileStatusLabel"
         :last-compile-feedback="lastCompileFeedback"
         :run-request-key="runRequestKey"
         :workspace-files="workspaceFiles"

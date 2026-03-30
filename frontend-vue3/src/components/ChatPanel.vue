@@ -6,24 +6,13 @@ import type { ChatMessage } from '../composables/useAppProviderState'
 
 const draft = defineModel<string>('draft', { required: true })
 
-const props = withDefaults(
-  defineProps<{
-    compileStatusLabel: string
-    composerLabel?: string
-    isHydrating: boolean
-    isThinking: boolean
-    messages: ChatMessage[]
-    sessionId: string | null
-    showCreateButton?: boolean
-  }>(),
-  {
-    composerLabel: '把你的页面需求发给 Agent',
-    showCreateButton: true,
-  },
-)
+const props = defineProps<{
+  isHydrating: boolean
+  isThinking: boolean
+  messages: ChatMessage[]
+}>()
 
 const emit = defineEmits<{
-  createSession: []
   submit: []
 }>()
 
@@ -40,6 +29,19 @@ function hasInProgressAssistant(messages: ChatMessage[]) {
 
 function renderMessageContent(content: string) {
   return markdown.render(content)
+}
+
+function handleComposerKeydown(event: KeyboardEvent) {
+  if (event.isComposing || props.isHydrating || props.isThinking) {
+    return
+  }
+
+  if (event.key !== 'Enter' || event.shiftKey) {
+    return
+  }
+
+  event.preventDefault()
+  emit('submit')
 }
 
 async function scrollMessagesToBottom() {
@@ -62,23 +64,13 @@ watch(
 
 <template>
   <section class="panel chat-panel">
-    <div class="panel-header">
-      <div>
-        <p class="panel-kicker">Agent Console</p>
-        <h2>聊天框</h2>
-      </div>
-      <div class="status-pill">{{ props.compileStatusLabel }}</div>
-    </div>
-
     <div ref="messagesContainer" class="messages" aria-live="polite">
       <article
         v-for="message in props.messages"
         :key="message.id"
         :class="['message', `message-${message.role}`]"
       >
-        <div class="message-role">
-          {{ message.role === 'assistant' ? 'Agent' : 'You' }}
-        </div>
+        <div v-if="message.role !== 'assistant'" class="message-role">YOU</div>
 
         <details
           v-if="message.role === 'assistant' && message.reasoningContent"
@@ -95,15 +87,8 @@ watch(
           v-html="renderMessageContent(message.content)"
         ></div>
 
-        <div
-          v-if="message.role === 'assistant' && message.toolCalls.length"
-          class="tool-call-list"
-        >
-          <div
-            v-for="toolCall in message.toolCalls"
-            :key="toolCall"
-            class="tool-call-pill"
-          >
+        <div v-if="message.role === 'assistant' && message.toolCalls.length" class="tool-call-list">
+          <div v-for="toolCall in message.toolCalls" :key="toolCall" class="tool-call-pill">
             <span class="tool-call-label">Tool</span>
             <span class="tool-call-name">{{ toolCall }}</span>
           </div>
@@ -118,34 +103,34 @@ watch(
         v-show="props.isThinking && !hasInProgressAssistant(props.messages)"
         class="message message-assistant"
       >
-        <div class="message-role">Agent</div>
-        <div class="message-content" v-html="renderMessageContent('正在整理代码修改和编译动作...')"></div>
+        <div
+          class="message-content"
+          v-html="renderMessageContent('正在整理代码修改和编译动作...')"
+        ></div>
       </article>
     </div>
 
     <form class="composer" @submit.prevent="emit('submit')">
-      <label class="composer-label" for="prompt">{{ props.composerLabel }}</label>
       <textarea
+        v-if="!props.isThinking"
         id="prompt"
         v-model="draft"
         placeholder="例如：做一个产品介绍页，使用暖色渐变背景，增加 pricing section。"
         rows="4"
-        :disabled="props.isHydrating || props.isThinking"
+        :disabled="props.isHydrating"
+        @keydown="handleComposerKeydown"
       />
       <div class="composer-footer">
-        <p>{{ props.sessionId ? `Session ${props.sessionId.slice(0, 8)} 已连接。` : '当前还没有选中会话。' }}</p>
-        <div class="composer-actions">
-          <button
-            v-if="props.showCreateButton"
-            type="button"
-            class="secondary-button"
-            :disabled="props.isHydrating || props.isThinking"
-            @click="emit('createSession')"
-          >
-            新建会话
-          </button>
-          <button type="submit" :disabled="props.isHydrating || props.isThinking">发送需求</button>
-        </div>
+        <p class="composer-hint">
+          {{ props.isThinking ? '正在生成中，请不要关闭网页。' : 'Enter 发送，Shift+Enter 换行' }}
+        </p>
+        <button
+          type="submit"
+          class="composer-submit"
+          :disabled="props.isHydrating || props.isThinking"
+        >
+          {{ props.isThinking ? '生成中' : '发送需求' }}
+        </button>
       </div>
     </form>
   </section>

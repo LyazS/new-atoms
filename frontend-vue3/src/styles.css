@@ -91,7 +91,7 @@ a {
   align-items: center;
   gap: 24px;
   width: 100%;
-  margin: 0 0 24px;
+  margin: 0 0 12px;
 }
 
 .hero-main {
@@ -199,6 +199,15 @@ a {
   gap: 12px;
 }
 
+.sandbox-panel-header {
+  justify-content: flex-end;
+  padding: 14px 18px 10px;
+}
+
+.sandbox-panel-header .sandbox-toolbar {
+  margin-left: auto;
+}
+
 .status-pill {
   height: fit-content;
   margin-top: 6px;
@@ -207,10 +216,17 @@ a {
   font-size: 0.88rem;
 }
 
+.sandbox-status-pill {
+  margin-top: 0;
+  padding: 7px 12px;
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
 .tab-switcher {
   display: inline-flex;
   align-items: center;
-  padding: 4px;
+  padding: 3px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -219,8 +235,11 @@ a {
 .tab-button {
   border: 0;
   border-radius: 999px;
-  padding: 10px 16px;
+  min-height: 30px;
+  padding: 6px 12px;
   color: rgba(253, 246, 236, 0.72);
+  font-size: 0.82rem;
+  line-height: 1;
   background: transparent;
   cursor: pointer;
   transition: background-color 160ms ease, color 160ms ease;
@@ -235,14 +254,14 @@ a {
 .messages {
   flex: 1;
   min-height: 0;
-  padding: 0 24px 24px;
+  padding: 18px 24px 24px;
   overflow: auto;
 }
 
 .message {
   max-width: 88%;
   margin-bottom: 16px;
-  padding: 16px 18px;
+  padding: 6px 12px 10px;
   border-radius: 22px;
 }
 
@@ -326,7 +345,8 @@ a {
 }
 
 .message-assistant {
-  border-top-left-radius: 8px;
+  padding: 4px 10px 8px;
+  border-radius: 18px;
   background: rgba(255, 255, 255, 0.08);
 }
 
@@ -358,7 +378,7 @@ a {
 
 .reasoning-panel,
 .tool-call-pill {
-  margin-top: 12px;
+  margin-top: 8px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(9, 8, 12, 0.28);
@@ -370,7 +390,7 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
+  padding: 8px 10px;
   color: rgba(255, 244, 230, 0.88);
   font-size: 0.88rem;
 }
@@ -386,7 +406,7 @@ a {
 
 .reasoning-panel pre {
   margin: 0;
-  padding: 0 14px 14px;
+  padding: 0 10px 10px;
   white-space: pre-wrap;
   word-break: break-word;
   color: rgba(255, 248, 240, 0.82);
@@ -397,26 +417,31 @@ a {
 .tool-call-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 12px;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 0;
+  margin-left: auto;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .tool-call-pill {
   margin-top: 0;
   border-radius: 999px;
-  background: rgba(255, 214, 142, 0.08);
-  border-color: rgba(255, 214, 142, 0.18);
-  padding: 10px 14px;
+  border: 0;
+  background: rgba(255, 214, 142, 0.05);
+  gap: 8px;
+  padding: 4px 7px;
 }
 
 .tool-call-label {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
+  padding: 3px 7px;
   border-radius: 999px;
   color: #35140c;
   background: linear-gradient(135deg, #ffe4a6, #ffb275);
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -425,6 +450,7 @@ a {
 .tool-call-name {
   color: #fff4e6;
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .message-status {
@@ -438,16 +464,9 @@ a {
   padding: 0 24px 24px;
 }
 
-.composer-label {
-  display: block;
-  margin-bottom: 10px;
-  color: rgba(253, 246, 236, 0.74);
-  font-size: 0.95rem;
-}
-
 .composer textarea {
   width: 100%;
-  resize: vertical;
+  resize: none;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 24px;
   padding: 18px;
@@ -466,24 +485,19 @@ a {
   color: rgba(253, 246, 236, 0.34);
 }
 
+.composer-hint {
+  margin: 0;
+  margin-right: auto;
+  color: rgba(255, 230, 196, 0.56);
+  font-size: 0.8rem;
+}
+
 .composer-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 18px;
-  margin-top: 14px;
-}
-
-.composer-footer p {
-  margin: 0;
-  color: rgba(253, 246, 236, 0.56);
-  font-size: 0.9rem;
-}
-
-.composer-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  margin-top: 8px;
 }
 
 .composer button {
@@ -509,6 +523,11 @@ a {
   color: #42170d;
   background: linear-gradient(135deg, #ffe7a4, #ff9f67);
   box-shadow: 0 12px 30px rgba(255, 150, 96, 0.26);
+}
+
+.composer .composer-submit {
+  padding: 10px 16px;
+  font-size: 0.92rem;
 }
 
 .secondary-button,
@@ -576,30 +595,6 @@ a {
   background: rgba(12, 9, 12, 0.72);
 }
 
-.workbench-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.pane-toggle {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
-  padding: 8px 14px;
-  color: rgba(253, 246, 236, 0.72);
-  background: rgba(255, 255, 255, 0.04);
-  cursor: pointer;
-}
-
-.pane-toggle.is-open {
-  color: #2f120c;
-  background: linear-gradient(135deg, #ffe0a1, #ff9d68);
-  border-color: transparent;
-}
-
 .workbench-body {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
@@ -608,7 +603,7 @@ a {
 }
 
 .workbench-body.is-tree-collapsed {
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 52px minmax(0, 1fr);
 }
 
 .file-tree-panel {
@@ -620,14 +615,66 @@ a {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.02));
 }
 
+.file-tree-panel.is-collapsed {
+  align-items: center;
+}
+
 .file-tree-header {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 14px 16px;
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: rgba(248, 223, 198, 0.78);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.file-tree-panel.is-collapsed .file-tree-header {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 8px;
+}
+
+.file-tree-icon-button {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(248, 223, 198, 0.82);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.file-tree-icon-button:hover {
+  color: #fff3e7;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.file-tree-icon-button:focus-visible {
+  outline: 2px solid rgba(255, 173, 112, 0.7);
+  outline-offset: 2px;
+}
+
+.file-tree-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.18s ease;
+}
+
+.file-tree-icon.is-collapsed {
+  transform: rotate(180deg);
 }
 
 .editor-panel {
@@ -643,7 +690,7 @@ a {
 }
 
 .editor-column.is-terminal-collapsed {
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 52px;
 }
 
 .terminal-panel {
@@ -655,14 +702,65 @@ a {
   background: rgba(7, 6, 9, 0.76);
 }
 
+.terminal-panel.is-collapsed {
+  overflow: hidden;
+}
+
 .terminal-header {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 12px 16px;
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: rgba(248, 223, 198, 0.78);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.terminal-panel.is-collapsed .terminal-header {
+  height: 100%;
+  border-bottom: 0;
+}
+
+.terminal-icon-button {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  color: rgba(248, 223, 198, 0.82);
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.terminal-icon-button:hover {
+  color: #fff3e7;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.terminal-icon-button:focus-visible {
+  outline: 2px solid rgba(255, 173, 112, 0.7);
+  outline-offset: 2px;
+}
+
+.terminal-icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.18s ease;
+}
+
+.terminal-icon.is-collapsed {
+  transform: rotate(180deg);
 }
 
 .file-tree-panel .sp-file-explorer {
@@ -970,10 +1068,6 @@ a {
 
   .hero h1 {
     font-size: clamp(2.4rem, 14vw, 4rem);
-  }
-
-  .workbench-toolbar {
-    flex-wrap: wrap;
   }
 
   .workbench-body {
