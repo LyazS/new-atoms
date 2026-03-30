@@ -22,5 +22,11 @@ class Settings(BaseSettings):
     database_url: str = Field(default="sqlite:///./backend/app.db", alias="DATABASE_URL")
     auth_secret_key: str = Field(default="change-me-in-production", alias="AUTH_SECRET_KEY")
     access_token_expire_minutes: int = Field(default=120, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
+    publish_workspace_root: str = Field(default="data/published-workspaces", alias="PUBLISH_WORKSPACE_ROOT")
+    publish_artifact_root: str = Field(default="data/published-artifacts", alias="PUBLISH_ARTIFACT_ROOT")
+    publish_base_url: str = Field(default="http://127.0.0.1:8000", alias="PUBLISH_BASE_URL")
+    publish_build_timeout_seconds: int = Field(default=240, alias="PUBLISH_BUILD_TIMEOUT_SECONDS")
+    publish_max_concurrent_builds: int = Field(default=2, alias="PUBLISH_MAX_CONCURRENT_BUILDS")
+    publish_log_limit: int = Field(default=50000, alias="PUBLISH_LOG_LIMIT")
 
 settings = Settings()

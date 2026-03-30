@@ -49,6 +49,11 @@ class SessionModel(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    publish_state: Mapped["SessionPublishStateModel | None"] = relationship(
+        back_populates="session",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
 
 
 class SessionMessageModel(Base):
@@ -80,3 +85,20 @@ class SessionRuntimeStateModel(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
 
     session: Mapped[SessionModel] = relationship(back_populates="runtime_state")
+
+
+class SessionPublishStateModel(Base):
+    __tablename__ = "session_publish_state"
+
+    session_id: Mapped[str] = mapped_column(ForeignKey("sessions.id", ondelete="CASCADE"), primary_key=True)
+    status: Mapped[str] = mapped_column(String(24), default="idle")
+    job_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    current_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    public_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    build_log: Mapped[str] = mapped_column(Text, default="")
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now)
+
+    session: Mapped[SessionModel] = relationship(back_populates="publish_state")

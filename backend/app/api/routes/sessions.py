@@ -20,8 +20,10 @@ from app.schemas.session import (
     FrontendToolResultInputRequest,
     FrontendToolResultRequest,
     FrontendToolResultResponse,
+    GetPublishStateResponse,
     GetSessionResponse,
     MessageRole,
+    PublishSessionResponse,
     SessionEventName,
     SessionInputRequest,
     SessionInputResponse,
@@ -31,6 +33,7 @@ from app.schemas.session import (
     UserMessageInputRequest,
 )
 from app.services.agent_runner import agent_runner
+from app.services.publish_service import publish_service
 from app.services.session_store import session_store
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
@@ -158,7 +161,38 @@ async def get_session(session_id: str, current_user: UserPublic = Depends(get_cu
 @router.delete("/{session_id}", status_code=204)
 async def delete_session(session_id: str, current_user: UserPublic = Depends(get_current_user)) -> Response:
     session_store.delete_session(session_id=session_id, user_id=current_user.id)
+    publish_service.cleanup_session_artifacts(session_id)
     return Response(status_code=204)
+
+
+@router.get("/{session_id}/publish", response_model=GetPublishStateResponse)
+async def get_publish_state(
+    session_id: str,
+    current_user: UserPublic = Depends(get_current_user),
+) -> GetPublishStateResponse:
+    session_store.get_user_session(session_id=session_id, user_id=current_user.id)
+    state = publish_service.get_state(session_id)
+    return GetPublishStateResponse(
+        session_id=state.session_id,
+        status=state.status,
+        job_id=state.job_id,
+        current_version=state.current_version,
+        public_url=state.public_url,
+        started_at=state.started_at,
+        finished_at=state.finished_at,
+        error_message=state.error_message,
+        logs=state.build_log,
+    )
+
+
+@router.post("/{session_id}/publish", response_model=PublishSessionResponse)
+async def publish_session(
+    session_id: str,
+    current_user: UserPublic = Depends(get_current_user),
+) -> PublishSessionResponse:
+    session_store.get_user_session(session_id=session_id, user_id=current_user.id)
+    state = await publish_service.queue_publish(session_id)
+    return PublishSessionResponse(job_id=state.job_id or "", status=state.status)
 
 
 @router.get("/{session_id}/events")

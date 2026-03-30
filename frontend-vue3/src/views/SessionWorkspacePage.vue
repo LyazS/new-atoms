@@ -9,7 +9,7 @@ import { useSessionConversationState } from '../composables/useSessionConversati
 
 const route = useRoute()
 const router = useRouter()
-const { logout, isAuthenticated } = useAuthState()
+const { isAuthenticated } = useAuthState()
 const {
   compileStatusLabel,
   disconnectEventStream,
@@ -18,12 +18,17 @@ const {
   handleRunnerStateChange,
   handleSubmit,
   isHydrating,
+  isPublishing,
   isThinking,
   lastCompileFeedback,
   loadSession,
   messages,
+  publishError,
+  publishStatus,
+  publishUrl,
   runRequestKey,
   sessionTitle,
+  triggerPublish,
   workspaceFiles,
 } = useSessionConversationState()
 
@@ -39,12 +44,6 @@ async function hydrateSession() {
   if (!ok && !isAuthenticated.value) {
     await router.replace('/auth')
   }
-}
-
-async function handleLogout() {
-  disconnectEventStream()
-  logout()
-  await router.push('/auth')
 }
 
 watch(sessionId, () => {
@@ -68,7 +67,18 @@ watch(isAuthenticated, (value) => {
       </div>
       <div class="hero-actions page-hero-actions">
         <button type="button" class="secondary-button" @click="router.push('/sessions')">返回会话管理</button>
-        <button type="button" class="secondary-button" @click="handleLogout">退出登录</button>
+        <a
+          v-if="publishStatus === 'success' && publishUrl"
+          :href="publishUrl"
+          target="_blank"
+          rel="noreferrer"
+          class="secondary-button hero-action-link"
+        >
+          访问
+        </a>
+        <button type="button" class="primary-button" :disabled="isPublishing" @click="triggerPublish">
+          {{ isPublishing ? '发布中...' : '发布' }}
+        </button>
       </div>
     </header>
 
@@ -90,5 +100,6 @@ watch(isAuthenticated, (value) => {
         @runner-state-change="handleRunnerStateChange"
       />
     </main>
+    <p v-if="publishError" class="panel-error publish-inline-error">{{ publishError }}</p>
   </div>
 </template>

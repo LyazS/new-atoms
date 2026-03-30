@@ -166,6 +166,20 @@ a {
   min-height: 0;
 }
 
+.hero-action-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.publish-inline-error {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: min(1680px, calc(100vw - 40px));
+  margin: 12px auto 0;
+}
+
 .panel {
   min-height: 0;
   height: 100%;

@@ -6,6 +6,7 @@ from loguru import logger
 import uvicorn
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.published import router as published_router
 from app.api.routes.sessions import router as sessions_router
 from app.config.logging import setup_logging
 from app.config.settings import settings
@@ -31,6 +32,7 @@ app.add_middleware(
 )
 app.include_router(auth_router)
 app.include_router(sessions_router)
+app.include_router(published_router)
 
 
 @app.get("/health")

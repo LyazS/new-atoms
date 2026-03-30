@@ -9,6 +9,7 @@ import { useSessionListState } from './useSessionListState'
 
 type MessageRole = 'assistant' | 'user'
 type TurnState = 'running' | 'waiting_for_frontend' | 'completed' | 'failed'
+type PublishStatus = 'idle' | 'queued' | 'building' | 'success' | 'failed'
 
 type ServerDisplayMessage = {
   id: string
@@ -23,6 +24,18 @@ type SessionInputResponse = {
   accepted: boolean
   turn_id: string
   state: TurnState | null
+}
+
+type PublishStateResponse = {
+  session_id: string
+  status: PublishStatus
+  job_id: string | null
+  current_version: string | null
+  public_url: string | null
+  started_at: string | null
+  finished_at: string | null
+  error_message: string | null
+  logs: string
 }
 
 type WorkspaceOp =
@@ -80,6 +93,14 @@ export function useSessionConversationState() {
   const eventConnectionState = ref<'connecting' | 'open' | 'closed'>('closed')
   const currentTurnId = ref<string | null>(null)
   const pendingFrontendTurnId = ref<string | null>(null)
+  const publishStatus = ref<PublishStatus>('idle')
+  const publishJobId = ref<string | null>(null)
+  const publishUrl = ref<string | null>(null)
+  const publishVersion = ref<string | null>(null)
+  const publishError = ref<string | null>(null)
+  const publishLogs = ref('')
+  const publishStartedAt = ref<string | null>(null)
+  const publishFinishedAt = ref<string | null>(null)
 
   let eventStreamController: AbortController | null = null
   let eventSourceReadyPromise: Promise<void> | null = null
@@ -109,6 +130,26 @@ export function useSessionConversationState() {
       return 'Compile Idle'
     }
     return `Compile ${lastCompileFeedback.value.status}`
+  })
+
+  const isPublishing = computed(
+    () => publishStatus.value === 'queued' || publishStatus.value === 'building',
+  )
+
+  const publishStatusLabel = computed(() => {
+    if (publishStatus.value === 'idle') {
+      return '尚未发布'
+    }
+    if (publishStatus.value === 'queued') {
+      return '发布排队中'
+    }
+    if (publishStatus.value === 'building') {
+      return '正在构建'
+    }
+    if (publishStatus.value === 'success') {
+      return '发布成功'
+    }
+    return '发布失败'
   })
 
   function hydrateMessages(nextMessages: ServerDisplayMessage[]) {
@@ -211,6 +252,17 @@ export function useSessionConversationState() {
     workspaceFiles.value = nextFiles
   }
 
+  function applyPublishState(payload: PublishStateResponse) {
+    publishStatus.value = payload.status
+    publishJobId.value = payload.job_id
+    publishUrl.value = payload.public_url
+    publishVersion.value = payload.current_version
+    publishError.value = payload.error_message
+    publishLogs.value = payload.logs
+    publishStartedAt.value = payload.started_at
+    publishFinishedAt.value = payload.finished_at
+  }
+
   function clearReconnectTimer() {
     if (reconnectTimer !== null) {
       window.clearTimeout(reconnectTimer)
@@ -292,6 +344,30 @@ export function useSessionConversationState() {
         message.isInProgress ? { ...message, isInProgress: false } : message,
       )
       pushAssistantMessage(`当前任务失败：${payload.reason}`)
+      return
+    }
+
+    if (event.event === 'publish.status_changed') {
+      const payload = JSON.parse(event.data) as PublishStateResponse
+      applyPublishState({
+        ...payload,
+        logs: publishLogs.value,
+      })
+      return
+    }
+
+    if (event.event === 'publish.log') {
+      const payload = JSON.parse(event.data) as { chunk: string }
+      publishLogs.value = `${publishLogs.value}${payload.chunk}`
+      return
+    }
+
+    if (event.event === 'publish.completed' || event.event === 'publish.failed') {
+      const payload = JSON.parse(event.data) as PublishStateResponse
+      applyPublishState({
+        ...payload,
+        logs: payload.logs ?? publishLogs.value,
+      })
     }
   }
 
@@ -431,6 +507,7 @@ export function useSessionConversationState() {
       isThinking.value =
         payload.active_turn?.state === 'running' || payload.active_turn?.state === 'waiting_for_frontend'
       await connectEventStream(payload.session_id)
+      await loadPublishState(payload.session_id)
       return true
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {
@@ -526,6 +603,50 @@ export function useSessionConversationState() {
     }
   }
 
+  async function loadPublishState(sessionId = currentSessionId.value) {
+    if (!sessionId || !accessToken.value) {
+      return
+    }
+
+    try {
+      const payload = await apiJson<PublishStateResponse>(
+        `/api/sessions/${sessionId}/publish`,
+        {},
+        accessToken.value,
+      )
+      applyPublishState(payload)
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        logout()
+        return
+      }
+      publishError.value = error instanceof Error ? error.message : 'Failed to load publish state'
+    }
+  }
+
+  async function triggerPublish() {
+    if (!currentSessionId.value || !accessToken.value || isPublishing.value) {
+      return
+    }
+
+    try {
+      publishError.value = null
+      publishLogs.value = ''
+      await apiJson<{ job_id: string; status: PublishStatus }>(
+        `/api/sessions/${currentSessionId.value}/publish`,
+        { method: 'POST' },
+        accessToken.value,
+      )
+      await loadPublishState(currentSessionId.value)
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        logout()
+        return
+      }
+      publishError.value = error instanceof Error ? error.message : 'Failed to start publish'
+    }
+  }
+
   function handleRunnerStateChange(nextValue: boolean) {
     if (!pendingFrontendTurnId.value) {
       return
@@ -548,11 +669,23 @@ export function useSessionConversationState() {
     handleSubmit,
     isHydrating,
     isThinking,
+    isPublishing,
     lastCompileFeedback,
     loadSession,
+    loadPublishState,
     messages,
+    publishError,
+    publishFinishedAt,
+    publishJobId,
+    publishLogs,
+    publishStartedAt,
+    publishStatus,
+    publishStatusLabel,
+    publishUrl,
+    publishVersion,
     runRequestKey,
     sessionTitle,
+    triggerPublish,
     workspaceFiles,
   }
 }

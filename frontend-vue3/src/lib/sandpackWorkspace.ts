@@ -3,7 +3,8 @@ export const DEFAULT_WORKSPACE = {
   "name": "sandpack-vue-workspace",
   "private": true,
   "scripts": {
-    "dev": "vite"
+    "dev": "vite",
+    "build": "vite build"
   },
   "dependencies": {
     "vue": "^3.3.2"
@@ -32,6 +33,7 @@ export const DEFAULT_WORKSPACE = {
 import vue from "@vitejs/plugin-vue";
 
 export default defineConfig({
+  base: "./",
   plugins: [vue()],
 });
 `,

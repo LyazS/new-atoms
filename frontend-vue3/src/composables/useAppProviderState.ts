@@ -2,6 +2,7 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { CompileFeedback } from './useSandpackManualRun'
+import { getApiBaseUrl } from '../lib/api'
 import { cloneDefaultWorkspace } from '../lib/sandpackWorkspace'
 
 type MessageRole = 'assistant' | 'user'
@@ -71,7 +72,7 @@ export type ChatMessage = {
   isInProgress: boolean
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
+const API_BASE_URL = getApiBaseUrl()
 const SESSION_STORAGE_KEY = 'fastapi-agent-loop-session-id'
 
 export function useAppProviderState() {

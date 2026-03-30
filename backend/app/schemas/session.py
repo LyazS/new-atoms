@@ -40,6 +40,10 @@ class SessionEventName(StrEnum):
     FRONTEND_TOOL_CALL = "frontend.tool_call"
     TURN_COMPLETED = "turn.completed"
     TURN_FAILED = "turn.failed"
+    PUBLISH_STATUS_CHANGED = "publish.status_changed"
+    PUBLISH_LOG = "publish.log"
+    PUBLISH_COMPLETED = "publish.completed"
+    PUBLISH_FAILED = "publish.failed"
 
 
 class WorkspacePatchOpName(StrEnum):
@@ -57,6 +61,14 @@ class CompileStatus(StrEnum):
 class CompileResult(StrEnum):
     DONE = "done"
     TIMEOUT = "timeout"
+
+
+class PublishStatus(StrEnum):
+    IDLE = "idle"
+    QUEUED = "queued"
+    BUILDING = "building"
+    SUCCESS = "success"
+    FAILED = "failed"
 
 
 class ChatMessage(BaseModel):
@@ -125,6 +137,36 @@ class Session(BaseModel):
     pending_frontend_tool: PendingFrontendTool | None = None
     created_at: datetime = Field(default_factory=utc_now)
     updated_at: datetime = Field(default_factory=utc_now)
+
+
+class SessionPublishState(BaseModel):
+    session_id: str
+    status: PublishStatus = PublishStatus.IDLE
+    job_id: str | None = None
+    current_version: str | None = None
+    public_url: str | None = None
+    build_log: str = ""
+    error_message: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    updated_at: datetime = Field(default_factory=utc_now)
+
+
+class PublishSessionResponse(BaseModel):
+    job_id: str
+    status: PublishStatus
+
+
+class GetPublishStateResponse(BaseModel):
+    session_id: str
+    status: PublishStatus
+    job_id: str | None = None
+    current_version: str | None = None
+    public_url: str | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    error_message: str | None = None
+    logs: str = ""
 
 
 class CreateSessionResponse(BaseModel):
