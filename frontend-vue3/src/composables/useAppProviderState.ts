@@ -2,6 +2,7 @@ import { fetchEventSource } from '@microsoft/fetch-event-source'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import type { CompileFeedback } from './useSandpackManualRun'
+import { cloneDefaultWorkspace } from '../lib/sandpackWorkspace'
 
 type MessageRole = 'assistant' | 'user'
 type TurnState = 'running' | 'waiting_for_frontend' | 'completed' | 'failed'
@@ -73,26 +74,9 @@ export type ChatMessage = {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000'
 const SESSION_STORAGE_KEY = 'fastapi-agent-loop-session-id'
 
-const fallbackWorkspace = {
-  '/src/App.vue': `<template>
-  <main></main>
-</template>
-`,
-  '/src/main.js': `import { createApp } from "vue";
-import App from "./App.vue";
-import "./styles.css";
-
-createApp(App).mount("#app");
-`,
-  '/src/styles.css': `body {
-  margin: 0;
-}
-`,
-}
-
 export function useAppProviderState() {
   const messages = ref<ChatMessage[]>([])
-  const workspaceFiles = ref<Record<string, string>>({ ...fallbackWorkspace })
+  const workspaceFiles = ref<Record<string, string>>(cloneDefaultWorkspace())
   const draft = ref('')
   const isThinking = ref(false)
   const isHydrating = ref(false)
@@ -536,7 +520,7 @@ export function useAppProviderState() {
     const payload = (await response.json()) as CreateSessionResponse
     sessionId.value = payload.session_id
     persistSessionId(payload.session_id)
-    workspaceFiles.value = { ...fallbackWorkspace }
+    workspaceFiles.value = cloneDefaultWorkspace()
     hydrateMessages([])
     currentTurnId.value = null
     pendingFrontendTurnId.value = null
@@ -553,7 +537,7 @@ export function useAppProviderState() {
       disconnectEventStream()
       persistSessionId(null)
       sessionId.value = null
-      workspaceFiles.value = { ...fallbackWorkspace }
+      workspaceFiles.value = cloneDefaultWorkspace()
       hydrateMessages([])
       draft.value = ''
       currentTurnId.value = null

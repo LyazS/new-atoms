@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 
 import type { CompileFeedback } from './useSandpackManualRun'
 import { ApiError, apiJson, getApiBaseUrl } from '../lib/api'
+import { cloneDefaultWorkspace } from '../lib/sandpackWorkspace'
 import { useAuthState } from './useAuthState'
 import { useSessionListState } from './useSessionListState'
 
@@ -63,23 +64,6 @@ export type ChatMessage = {
   isInProgress: boolean
 }
 
-const fallbackWorkspace = {
-  '/src/App.vue': `<template>
-  <main></main>
-</template>
-`,
-  '/src/main.js': `import { createApp } from "vue";
-import App from "./App.vue";
-import "./styles.css";
-
-createApp(App).mount("#app");
-`,
-  '/src/styles.css': `body {
-  margin: 0;
-}
-`,
-}
-
 export function useSessionConversationState() {
   const { accessToken, logout } = useAuthState()
   const { persistLastSessionId } = useSessionListState()
@@ -87,7 +71,7 @@ export function useSessionConversationState() {
   const currentSessionId = ref<string | null>(null)
   const sessionTitle = ref('Project Workspace')
   const messages = ref<ChatMessage[]>([])
-  const workspaceFiles = ref<Record<string, string>>({ ...fallbackWorkspace })
+  const workspaceFiles = ref<Record<string, string>>(cloneDefaultWorkspace())
   const draft = ref('')
   const isThinking = ref(false)
   const isHydrating = ref(false)

@@ -69,12 +69,30 @@ watch(activeTab, async (nextTab) => {
 
     <div class="sandpack-frame">
       <SandpackProvider
-        template="vite-vue"
+        :custom-setup="{
+          entry: '/index.html',
+          environment: 'node',
+          dependencies: {
+            vue: '^3.3.2',
+          },
+          devDependencies: {
+            '@vitejs/plugin-vue': '^4.2.3',
+            'esbuild-wasm': '^0.17.19',
+            vite: '4.2.2',
+          },
+        }"
         :files="workspaceFiles"
         theme="dark"
         :options="{
           activeFile: '/src/App.vue',
-          visibleFiles: ['/src/App.vue', '/src/main.js', '/src/styles.css'],
+          visibleFiles: [
+            '/src/App.vue',
+            '/src/main.js',
+            '/src/styles.css',
+            '/package.json',
+            '/index.html',
+            '/vite.config.ts',
+          ],
           autorun: true,
           autoReload: true,
           initMode: 'immediate',
