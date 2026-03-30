@@ -32,6 +32,7 @@ class FrontendToolName(StrEnum):
 
 class SessionEventName(StrEnum):
     ASSISTANT_MESSAGE_STARTED = "assistant.message_started"
+    ASSISTANT_MESSAGE_RESET = "assistant.message_reset"
     ASSISTANT_DELTA = "assistant.delta"
     ASSISTANT_REASONING_DELTA = "assistant.reasoning_delta"
     ASSISTANT_TOOL_CALLS_UPDATED = "assistant.tool_calls_updated"

@@ -1,18 +1,16 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import time
 from typing import Any, cast
 from uuid import uuid4
 
 from loguru import logger
-from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 
 from app.config.settings import settings
 from app.schemas.session import ChatMessage, CompileFeedback, MessageRole, Session, SessionEventName, TurnState
-from app.services.openai_client import openai_client
+from app.services.openai_client import OpenAIClient, OpenAIRetryContext, OpenAIStreamRetryExhaustedError, openai_client
 from app.services.session_store import SessionStore, session_store
 from app.services.tool_executor import ToolExecutionKind, ToolExecutor, get_tool_definitions, tool_executor
 
@@ -121,7 +119,7 @@ class AgentRunner:
         self,
         *,
         session_store: SessionStore,
-        openai_client: AsyncOpenAI,
+        openai_client: OpenAIClient,
         tool_executor: ToolExecutor,
     ) -> None:
         self.session_store = session_store
@@ -263,7 +261,7 @@ class AgentRunner:
             logger.exception("agent loop failed session_id={} error={}", session_id, exc)
             async with self.session_store.get_lock(session_id):
                 session = self.session_store.get_session(session_id)
-                await self._fail_turn(session, "Agent 执行循环发生异常。")
+                await self._fail_turn(session, str(exc) or "Agent 执行循环发生异常。")
 
     async def resume_after_frontend_result(
         self,
@@ -296,97 +294,161 @@ class AgentRunner:
         message_id = str(uuid4())
         async with self.session_store.get_lock(session.session_id):
             locked_session = self.session_store.get_session(session.session_id)
-            self.session_store.set_turn_streaming_message_id(locked_session, message_id)
+            self.session_store.set_turn_streaming_message_id(locked_session, None)
             self.session_store.set_turn_streaming_tool_calls(locked_session, [])
 
-        await self.session_store.publish_event(
-            session.session_id,
-            SessionEventName.ASSISTANT_MESSAGE_STARTED,
-            {
-                "turn_id": turn_id,
-                "message_id": message_id,
-            },
-        )
         messages = self._build_openai_messages(session)
         tools = cast(list[ChatCompletionToolParam], get_tool_definitions())
-        stream = await self.openai_client.chat.completions.create(
-            model=self.settings.openai_model,
-            messages=messages,
-            tools=tools,
-            tool_choice="auto",
-            parallel_tool_calls=False,
-            stream=True,
-        )
-
         assistant_chunks: list[str] = []
         reasoning_chunks: list[str] = []
         tool_calls: dict[int, dict[str, Any]] = {}
 
-        async for chunk in stream:
-            choice = chunk.choices[0] if chunk.choices else None
-            if not choice:
-                continue
+        assistant_message_started = False
 
-            delta = choice.delta
-            if delta.content:
-                assistant_chunks.append(delta.content)
+        async def handle_retry(retry_context: OpenAIRetryContext) -> None:
+            nonlocal assistant_chunks, reasoning_chunks, tool_calls, assistant_message_started
+            assistant_chunks = []
+            reasoning_chunks = []
+            tool_calls = {}
+
+            async with self.session_store.get_lock(session.session_id):
+                locked_session = self.session_store.get_session(session.session_id)
+                self.session_store.set_turn_streaming_message_id(locked_session, None)
+                self.session_store.set_turn_streaming_tool_calls(locked_session, [])
+
+            if retry_context.stream_started or assistant_message_started:
+                assistant_message_started = False
                 await self.session_store.publish_event(
                     session.session_id,
-                    SessionEventName.ASSISTANT_DELTA,
+                    SessionEventName.ASSISTANT_MESSAGE_RESET,
                     {
                         "turn_id": turn_id,
                         "message_id": message_id,
-                        "delta": delta.content,
+                        "attempt": retry_context.attempt,
                     },
                 )
 
-            reasoning_delta = getattr(delta, "reasoning_content", None)
-            if reasoning_delta:
-                reasoning_chunks.append(reasoning_delta)
-                await self.session_store.publish_event(
-                    session.session_id,
-                    SessionEventName.ASSISTANT_REASONING_DELTA,
-                    {
-                        "turn_id": turn_id,
-                        "message_id": message_id,
-                        "delta": reasoning_delta,
-                    },
-                )
+            logger.warning(
+                "retrying openai stream session_id={} turn_id={} attempt={} max_attempts={} "
+                "delay_seconds={:.3f} stream_started={} status_code={} error_type={} error={}",
+                session.session_id,
+                turn_id,
+                retry_context.attempt,
+                retry_context.max_attempts,
+                retry_context.delay_seconds,
+                retry_context.stream_started,
+                retry_context.status_code,
+                type(retry_context.exception).__name__,
+                retry_context.exception,
+            )
 
-            if not delta.tool_calls:
-                continue
+        try:
+            stream = self.openai_client.create_chat_completion_stream(
+                model=self.settings.openai_model,
+                messages=messages,
+                tools=tools,
+                tool_choice="auto",
+                parallel_tool_calls=False,
+                on_retry=handle_retry,
+            )
 
-            for tool_delta in delta.tool_calls:
-                index = tool_delta.index
-                current = tool_calls.setdefault(
-                    index,
-                    {
-                        "id": tool_delta.id or f"tool-{index}",
-                        "type": "function",
-                        "function": {"name": "", "arguments": ""},
-                    },
-                )
-                if tool_delta.id:
-                    current["id"] = tool_delta.id
-                if tool_delta.function and tool_delta.function.name:
-                    current["function"]["name"] += tool_delta.function.name
-                if tool_delta.function and tool_delta.function.arguments:
-                    current["function"]["arguments"] += tool_delta.function.arguments
+            async for chunk in stream:
+                if not assistant_message_started:
+                    assistant_message_started = True
+                    async with self.session_store.get_lock(session.session_id):
+                        locked_session = self.session_store.get_session(session.session_id)
+                        self.session_store.set_turn_streaming_message_id(locked_session, message_id)
+                    await self.session_store.publish_event(
+                        session.session_id,
+                        SessionEventName.ASSISTANT_MESSAGE_STARTED,
+                        {
+                            "turn_id": turn_id,
+                            "message_id": message_id,
+                        },
+                    )
 
-            display_tool_calls = build_display_tool_calls([tool_calls[index] for index in sorted(tool_calls)])
-            if display_tool_calls:
-                async with self.session_store.get_lock(session.session_id):
-                    locked_session = self.session_store.get_session(session.session_id)
-                    self.session_store.set_turn_streaming_tool_calls(locked_session, display_tool_calls)
-                await self.session_store.publish_event(
-                    session.session_id,
-                    SessionEventName.ASSISTANT_TOOL_CALLS_UPDATED,
-                    {
-                        "turn_id": turn_id,
-                        "message_id": message_id,
-                        "tool_calls": display_tool_calls,
-                    },
-                )
+                choice = chunk.choices[0] if chunk.choices else None
+                if not choice:
+                    continue
+
+                delta = choice.delta
+                if delta.content:
+                    assistant_chunks.append(delta.content)
+                    await self.session_store.publish_event(
+                        session.session_id,
+                        SessionEventName.ASSISTANT_DELTA,
+                        {
+                            "turn_id": turn_id,
+                            "message_id": message_id,
+                            "delta": delta.content,
+                        },
+                    )
+
+                reasoning_delta = getattr(delta, "reasoning_content", None)
+                if reasoning_delta:
+                    reasoning_chunks.append(reasoning_delta)
+                    await self.session_store.publish_event(
+                        session.session_id,
+                        SessionEventName.ASSISTANT_REASONING_DELTA,
+                        {
+                            "turn_id": turn_id,
+                            "message_id": message_id,
+                            "delta": reasoning_delta,
+                        },
+                    )
+
+                if not delta.tool_calls:
+                    continue
+
+                for tool_delta in delta.tool_calls:
+                    index = tool_delta.index
+                    current = tool_calls.setdefault(
+                        index,
+                        {
+                            "id": tool_delta.id or f"tool-{index}",
+                            "type": "function",
+                            "function": {"name": "", "arguments": ""},
+                        },
+                    )
+                    if tool_delta.id:
+                        current["id"] = tool_delta.id
+                    if tool_delta.function and tool_delta.function.name:
+                        current["function"]["name"] += tool_delta.function.name
+                    if tool_delta.function and tool_delta.function.arguments:
+                        current["function"]["arguments"] += tool_delta.function.arguments
+
+                display_tool_calls = build_display_tool_calls([tool_calls[index] for index in sorted(tool_calls)])
+                if display_tool_calls:
+                    async with self.session_store.get_lock(session.session_id):
+                        locked_session = self.session_store.get_session(session.session_id)
+                        self.session_store.set_turn_streaming_tool_calls(locked_session, display_tool_calls)
+                    await self.session_store.publish_event(
+                        session.session_id,
+                        SessionEventName.ASSISTANT_TOOL_CALLS_UPDATED,
+                        {
+                            "turn_id": turn_id,
+                            "message_id": message_id,
+                            "tool_calls": display_tool_calls,
+                        },
+                    )
+        except OpenAIStreamRetryExhaustedError as exc:
+            if exc.attempts > 1:
+                raise RuntimeError("OpenAI 请求重试后仍失败。") from exc
+            raise RuntimeError("OpenAI 请求失败。") from exc
+
+        if not assistant_message_started:
+            assistant_message_started = True
+            async with self.session_store.get_lock(session.session_id):
+                locked_session = self.session_store.get_session(session.session_id)
+                self.session_store.set_turn_streaming_message_id(locked_session, message_id)
+            await self.session_store.publish_event(
+                session.session_id,
+                SessionEventName.ASSISTANT_MESSAGE_STARTED,
+                {
+                    "turn_id": turn_id,
+                    "message_id": message_id,
+                },
+            )
 
         elapsed_ms = int((time.perf_counter() - started_at) * 1000)
         logger.info(

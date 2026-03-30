@@ -195,6 +195,21 @@ export function useAppProviderState() {
     )
   }
 
+  function resetAssistantMessage(messageId: string) {
+    ensureAssistantMessage(messageId)
+    messages.value = messages.value.map((message) =>
+      message.id === messageId
+        ? {
+            ...message,
+            content: '',
+            reasoningContent: null,
+            toolCalls: [],
+            isInProgress: false,
+          }
+        : message,
+    )
+  }
+
   function appendAssistantDelta(messageId: string, delta: string) {
     const target = ensureAssistantMessage(messageId)
     messages.value = messages.value.map((message) =>
@@ -290,6 +305,12 @@ export function useAppProviderState() {
     if (event.event === 'assistant.message_started') {
       const payload = JSON.parse(event.data) as { message_id: string }
       startAssistantMessage(payload.message_id)
+      return
+    }
+
+    if (event.event === 'assistant.message_reset') {
+      const payload = JSON.parse(event.data) as { message_id: string }
+      resetAssistantMessage(payload.message_id)
       return
     }
 
