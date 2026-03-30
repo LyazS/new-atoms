@@ -62,7 +62,7 @@ watch(isAuthenticated, (value) => {
   <div class="app-shell">
     <header class="hero">
       <div class="hero-main">
-        <p class="eyebrow">Session Workspace</p>
+        <p class="eyebrow">Btoms Session Workspace</p>
         <p class="hero-copy">{{ sessionTitle }}</p>
       </div>
       <div class="hero-actions page-hero-actions">

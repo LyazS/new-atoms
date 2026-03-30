@@ -13,7 +13,7 @@ const password = ref('')
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 
-const title = computed(() => (mode.value === 'login' ? '登录继续管理项目' : '创建账号开始管理项目'))
+const title = computed(() => (mode.value === 'login' ? '登录继续使用 Btoms' : '创建账号开始使用 Btoms'))
 const submitLabel = computed(() => (mode.value === 'login' ? '登录' : '注册并进入'))
 
 async function handleSubmit() {
@@ -43,10 +43,10 @@ async function handleSubmit() {
   <main class="auth-page">
     <section class="auth-card">
       <div class="auth-copy">
-        <p class="eyebrow">User Access</p>
+        <p class="eyebrow">Btoms Access</p>
         <h1>{{ title }}</h1>
         <p>
-          先完成注册或登录，再进入你的会话管理页。登录后每个用户都只能访问自己的项目和会话。
+          先完成注册或登录，再进入 Btoms 的会话管理页。登录后每个用户都只能访问自己的项目和会话。
         </p>
       </div>
 

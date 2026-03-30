@@ -62,10 +62,10 @@ onMounted(() => {
   <main class="sessions-page">
     <header class="page-hero">
       <div>
-        <p class="eyebrow">Workspace Index</p>
+        <p class="eyebrow">Btoms Workspace</p>
         <h1>会话管理</h1>
         <p class="hero-copy">
-          {{ currentUser?.username }}，你可以从这里创建新项目，或者回到任意历史会话继续工作。
+          {{ currentUser?.username }}，你可以从这里进入 Btoms 的项目列表，创建新项目，或者回到任意历史会话继续工作。
         </p>
       </div>
 
