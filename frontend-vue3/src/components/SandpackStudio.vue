@@ -9,7 +9,7 @@ import {
 } from 'sandpack-vue3'
 
 import type { CompileFeedback } from '../composables/useSandpackManualRun'
-import ManualRunBridge from './ManualRunBridge.vue'
+import SandpackCompileBridge from './SandpackCompileBridge.vue'
 
 const props = defineProps<{
   lastCompileFeedback: CompileFeedback | null
@@ -87,7 +87,7 @@ watch(activeTab, async (nextTab) => {
           <div v-show="activeTab === 'code'" class="sandpack-view is-active">
             <div class="code-workbench">
               <div class="workbench-toolbar">
-                <ManualRunBridge
+                <SandpackCompileBridge
                   :workspace-files="workspaceFiles"
                   :run-request-key="runRequestKey"
                   @manual-run-result="emit('manualRunResult', $event)"

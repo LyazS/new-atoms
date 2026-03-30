@@ -19,5 +19,8 @@ class Settings(BaseSettings):
     log_file_rotation: str = Field(default="10 MB", alias="LOG_FILE_ROTATION")
     log_file_retention: str = Field(default="7 days", alias="LOG_FILE_RETENTION")
     cors_allow_origins: list[str] = Field(default_factory=lambda: ["*"], alias="CORS_ALLOW_ORIGINS")
+    database_url: str = Field(default="sqlite:///./backend/app.db", alias="DATABASE_URL")
+    auth_secret_key: str = Field(default="change-me-in-production", alias="AUTH_SECRET_KEY")
+    access_token_expire_minutes: int = Field(default=120, alias="ACCESS_TOKEN_EXPIRE_MINUTES")
 
 settings = Settings()

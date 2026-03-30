@@ -81,7 +81,5 @@ watch(
 </script>
 
 <template>
-  <button type="button" class="pane-toggle manual-run-button" :disabled="isRunning" @click="runAndEmit">
-    {{ isRunning ? '编译中...' : '手动编译' }}
-  </button>
+  <span aria-hidden="true" style="display: none" />
 </template>

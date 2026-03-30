@@ -6,13 +6,21 @@ import type { ChatMessage } from '../composables/useAppProviderState'
 
 const draft = defineModel<string>('draft', { required: true })
 
-const props = defineProps<{
-  compileStatusLabel: string
-  isHydrating: boolean
-  isThinking: boolean
-  messages: ChatMessage[]
-  sessionId: string | null
-}>()
+const props = withDefaults(
+  defineProps<{
+    compileStatusLabel: string
+    composerLabel?: string
+    isHydrating: boolean
+    isThinking: boolean
+    messages: ChatMessage[]
+    sessionId: string | null
+    showCreateButton?: boolean
+  }>(),
+  {
+    composerLabel: '把你的页面需求发给 Agent',
+    showCreateButton: true,
+  },
+)
 
 const emit = defineEmits<{
   createSession: []
@@ -116,7 +124,7 @@ watch(
     </div>
 
     <form class="composer" @submit.prevent="emit('submit')">
-      <label class="composer-label" for="prompt">把你的页面需求发给 Agent</label>
+      <label class="composer-label" for="prompt">{{ props.composerLabel }}</label>
       <textarea
         id="prompt"
         v-model="draft"
@@ -125,11 +133,10 @@ watch(
         :disabled="props.isHydrating || props.isThinking"
       />
       <div class="composer-footer">
-        <p>
-          {{ props.sessionId ? `Session ${props.sessionId.slice(0, 8)} 已连接。` : '发送第一条消息后创建 session。' }}
-        </p>
+        <p>{{ props.sessionId ? `Session ${props.sessionId.slice(0, 8)} 已连接。` : '当前还没有选中会话。' }}</p>
         <div class="composer-actions">
           <button
+            v-if="props.showCreateButton"
             type="button"
             class="secondary-button"
             :disabled="props.isHydrating || props.isThinking"

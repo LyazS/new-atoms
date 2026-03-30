@@ -5,15 +5,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 import uvicorn
 
+from app.api.routes.auth import router as auth_router
 from app.api.routes.sessions import router as sessions_router
 from app.config.logging import setup_logging
 from app.config.settings import settings
+from app.db.session import init_db
 
 
 setup_logging()
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    init_db()
     logger.info("app started")
     yield
 
@@ -26,6 +29,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(auth_router)
 app.include_router(sessions_router)
 
 

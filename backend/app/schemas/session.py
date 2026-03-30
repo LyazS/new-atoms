@@ -116,6 +116,8 @@ class Turn(BaseModel):
 
 class Session(BaseModel):
     session_id: str = Field(default_factory=lambda: str(uuid4()))
+    user_id: str
+    title: str = "New Project"
     messages: list[ChatMessage]
     workspace_files: dict[str, str]
     active_turn: Turn | None = None
@@ -129,8 +131,18 @@ class CreateSessionResponse(BaseModel):
     session_id: str
 
 
+class SessionListItem(BaseModel):
+    id: str
+    title: str
+    created_at: datetime
+    updated_at: datetime
+    last_active_at: datetime
+    preview: str | None = None
+
+
 class GetSessionResponse(BaseModel):
     session_id: str
+    title: str
     messages: list[ChatMessage]
     display_messages: list[DisplayMessage]
     workspace: dict[str, str]
